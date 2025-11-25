@@ -1,0 +1,13 @@
+{
+  "name": "entrega-backend-1",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "src/app.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}
