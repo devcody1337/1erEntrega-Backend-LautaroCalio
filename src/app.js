@@ -1,17 +1,44 @@
 import express from "express"
+import { engine } from "express-handlebars"
+import { Server } from "socket.io"
+import http from "http"
+import path from "path"
+import { fileURLToPath } from "url"
+
 import productsRouter from "./routes/products.router.js"
 import cartsRouter from "./routes/carts.router.js"
+import viewsRouter from "./routes/views.router.js"
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 const app = express()
 const PORT = 8080
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }))
+const httpServer = http.createServer(app)
+const io = new Server(httpServer)
 
-// Rutas
+app.use(express.json())
+app.use(express.urlencoded({ extended: true }))
+app.use(express.static(path.join(__dirname, "public")))
+
+app.engine("handlebars", engine())
+app.set("view engine", "handlebars")
+app.set("views", path.join(__dirname, "views"))
+
+app.use((req, res, next) => {
+    req.io = io
+    next()
+})
+
+app.use("/", viewsRouter)
 app.use("/api/products", productsRouter)
 app.use("/api/carts", cartsRouter)
 
-app.listen(PORT, () => {
-  console.log(`Servidor corriendo en puerto ${PORT}`)
+io.on("connection", (socket) => {
+    console.log("Nuevo cliente conectado")
+})
+
+httpServer.listen(PORT, () => {
+    console.log(`Servidor corriendo en http://localhost:${PORT}`)
 })
