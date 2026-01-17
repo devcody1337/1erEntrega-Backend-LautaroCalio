@@ -1,53 +1,70 @@
-import fs from "fs/promises"
-import crypto from "crypto"
+import { cartModel } from "../dao/models/cart.model.js"
 
 class CartManager {
-  constructor() {
-    this.pathFile = "./src/data/carts.json"
-  }
-
-  async getCarts() {
-    try {
-      const data = await fs.readFile(this.pathFile, "utf-8")
-      return JSON.parse(data)
-    } catch {
-      return []
-    }
-  }
-
-  async createCart() {
-    const carts = await this.getCarts()
-    const newCart = { id: crypto.randomUUID(), products: [] }
-    
-    carts.push(newCart)
-    await fs.writeFile(this.pathFile, JSON.stringify(carts, null, 2))
-    return newCart
-  }
-
-  async getCartById(cid) {
-    const carts = await this.getCarts()
-    const cart = carts.find(c => c.id === cid)
-    if (!cart) throw new Error("Carrito no encontrado")
-    return cart
-  }
-
-  async addProductToCart(cid, pid) {
-    const carts = await this.getCarts()
-    const cartIndex = carts.findIndex(c => c.id === cid)
-    
-    if (cartIndex === -1) throw new Error("Carrito no encontrado")
-
-    const productIndex = carts[cartIndex].products.findIndex(p => p.product === pid)
-
-    if (productIndex !== -1) {
-      carts[cartIndex].products[productIndex].quantity++
-    } else {
-      carts[cartIndex].products.push({ product: pid, quantity: 1 })
+    async createCart() {
+        return await cartModel.create({ products: [] })
     }
 
-    await fs.writeFile(this.pathFile, JSON.stringify(carts, null, 2))
-    return carts[cartIndex]
-  }
+    async getCartById(id) {
+        return await cartModel.findById(id).populate("products.product").lean()
+    }
+
+    async addProductToCart(cid, pid) {
+        const cart = await cartModel.findById(cid)
+        if (!cart) throw new Error("Carrito no encontrado")
+
+        const productIndex = cart.products.findIndex(p => p.product._id.toString() === pid)
+
+        if (productIndex !== -1) {
+            cart.products[productIndex].quantity++
+        } else {
+            cart.products.push({ product: pid, quantity: 1 })
+        }
+        
+        return await cart.save()
+    }
+
+    async deleteProductFromCart(cid, pid) {
+        const cart = await cartModel.findById(cid)
+        if (!cart) throw new Error("Carrito no encontrado")
+        
+        cart.products = cart.products.filter(p => p.product._id.toString() !== pid)
+        
+        return await cart.save()
+    }
+
+    async updateCart(cid, products) {
+        const cart = await cartModel.findById(cid)
+        if (!cart) throw new Error("Carrito no encontrado")
+        
+        cart.products = products
+        return await cart.save()
+    }
+
+    async updateProductQuantity(cid, pid, quantity) {
+        const cart = await cartModel.findById(cid)
+        if (!cart) throw new Error("Carrito no encontrado")
+        
+        const productIndex = cart.products.findIndex(p => p.product._id.toString() === pid)
+        
+        if (productIndex !== -1) {
+            cart.products[productIndex].quantity = quantity
+        }
+        
+        return await cart.save()
+    }
+
+    async deleteAllProducts(cid) {
+        const cart = await cartModel.findByIdAndUpdate(
+            cid,
+            { $set: { products: [] } },
+            { new: true }
+        )
+
+        if (!cart) throw new Error("Carrito no encontrado")
+        
+        return cart
+    }
 }
 
 export default CartManager

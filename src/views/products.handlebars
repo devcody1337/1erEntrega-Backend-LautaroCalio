@@ -1,0 +1,69 @@
+<h2 class="mb-4 text-center">Nuestros Productos</h2>
+
+<div class="row row-cols-1 row-cols-md-3 g-4">
+    {{#each products}}
+    <div class="col">
+        <div class="card h-100 shadow-sm">
+            <div class="card-img-top bg-secondary text-white d-flex justify-content-center align-items-center" style="height: 200px">
+                <span>Sin Imagen</span>
+            </div>
+            
+            <div class="card-body d-flex flex-column">
+                <h5 class="card-title">{{this.title}}</h5>
+                <p class="card-text text-muted">{{this.description}}</p>
+                <p class="card-text">Categoría: <span class="badge bg-info text-dark">{{this.category}}</span></p>
+                
+                <div class="mt-auto d-flex justify-content-between align-items-center">
+                    <span class="h4 mb-0">${{this.price}}</span>
+                    <button class="btn btn-primary" onclick="addToCart('{{this._id}}')">
+                        <i class="bi bi-cart-plus"></i> Agregar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {{/each}}
+</div>
+
+<div class="d-flex justify-content-center mt-5">
+    <nav aria-label="Page navigation">
+        <ul class="pagination">
+            {{#if hasPrevPage}}
+            <li class="page-item">
+                <a class="page-link" href="/products?page={{prevPage}}">Anterior</a>
+            </li>
+            {{/if}}
+            
+            <li class="page-item disabled">
+                <span class="page-link">Página {{page}}</span>
+            </li>
+            
+            {{#if hasNextPage}}
+            <li class="page-item">
+                <a class="page-link" href="/products?page={{nextPage}}">Siguiente</a>
+            </li>
+            {{/if}}
+        </ul>
+    </nav>
+</div>
+
+<script>
+    async function addToCart(id) {
+        const cartId = "696ae2f7a871c14c06563821" 
+
+        try {
+            const response = await fetch(`/api/carts/${cartId}/product/${id}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" }
+            })
+
+            if (response.ok) {
+                alert("✅ Producto agregado al carrito")
+            } else {
+                alert("❌ Error al agregar producto")
+            }
+        } catch (error) {
+            console.error(error)
+        }
+    }
+</script>

@@ -1,0 +1,76 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Tu Carrito de Compras 🛒</h2>
+    <button class="btn btn-danger" onclick="emptyCart()">Vaciar Carrito</button>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <table class="table table-striped mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th scope="col">Producto</th>
+                    <th scope="col">Categoría</th>
+                    <th scope="col" class="text-center">Cantidad</th>
+                    <th scope="col" class="text-end">Precio Unitario</th>
+                    <th scope="col" class="text-center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#each products}}
+                <tr>
+                    <td>
+                        <strong>{{this.product.title}}</strong>
+                    </td>
+                    <td>{{this.product.category}}</td>
+                    <td class="text-center">{{this.quantity}}</td>
+                    <td class="text-end">${{this.product.price}}</td>
+                    <td class="text-center">
+                        <button class="btn btn-sm btn-outline-danger" onclick="removeFromCart('{{this.product._id}}')">
+                            <i class="bi bi-trash"></i> Eliminar
+                        </button>
+                    </td>
+                </tr>
+                {{else}}
+                <tr>
+                    <td colspan="5" class="text-center py-4">
+                        <h4>El carrito está vacío 😢</h4>
+                        <a href="/products" class="btn btn-primary mt-2">Ir a comprar</a>
+                    </td>
+                </tr>
+                {{/each}}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    const cartId = window.location.pathname.split("/").pop()
+
+    async function removeFromCart(productId) {
+        try {
+            const response = await fetch(`/api/carts/${cartId}/products/${productId}`, {
+                method: "DELETE"
+            })
+            if (response.ok) {
+                location.reload()
+            }
+        } catch (error) {
+            console.error(error)
+        }
+    }
+
+    async function emptyCart() {
+        if(!confirm("¿Estás seguro de vaciar el carrito?")) return
+        
+        try {
+            const response = await fetch(`/api/carts/${cartId}`, {
+                method: "DELETE"
+            })
+            if (response.ok) {
+                location.reload()
+            }
+        } catch (error) {
+            console.error(error)
+        }
+    }
+</script>

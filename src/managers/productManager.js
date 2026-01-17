@@ -1,76 +1,38 @@
-import fs from "fs/promises"
-import crypto from "crypto"
+import { productModel } from "../dao/models/product.model.js"
 
 class ProductManager {
-  constructor() {
-    this.pathFile = "./src/data/products.json"
-  }
+    async getProducts({ limit = 10, page = 1, sort, query }) {
+        const filter = {}
+        if (query) {
+            if (query === 'true' || query === 'false') {
+                filter.status = query === 'true'
+            } else {
+                filter.category = query
+            }
+        }
 
-  async getProducts() {
-    try {
-      const fileData = await fs.readFile(this.pathFile, "utf-8")
-      return JSON.parse(fileData)
-    } catch (error) {
-      return []
+        const sortOptions = {}
+        if (sort === 'asc') sortOptions.price = 1
+        if (sort === 'desc') sortOptions.price = -1
+
+        return await productModel.paginate(filter, { limit, page, sort: sortOptions, lean: true })
     }
-  }
 
-  async addProduct(product) {
-    try {
-      const products = await this.getProducts()
-
-      const { title, description, code, price, stock, category } = product
-      if (!title || !description || !code || !price || !stock || !category) {
-        throw new Error("Todos los campos son obligatorios")
-      }
-
-      if (products.some(p => p.code === code)) {
-        throw new Error("El código del producto ya existe")
-      }
-
-      const newProduct = {
-        id: crypto.randomUUID(),
-        ...product,
-        status: true,
-        thumbnails: product.thumbnails || []
-      }
-
-      products.push(newProduct)
-      await fs.writeFile(this.pathFile, JSON.stringify(products, null, 2))
-      return newProduct
-    } catch (error) {
-      throw new Error(error.message)
+    async addProduct(product) {
+        return await productModel.create(product)
     }
-  }
 
-  async getProductById(id) {
-    const products = await this.getProducts()
-    const product = products.find(p => p.id === id)
-    if (!product) throw new Error("Producto no encontrado")
-    return product
-  }
+    async getProductById(id) {
+        return await productModel.findById(id).lean()
+    }
 
-  async updateProduct(id, updates) {
-    const products = await this.getProducts()
-    const index = products.findIndex(p => p.id === id)
-    
-    if (index === -1) throw new Error("Producto no encontrado")
+    async updateProduct(id, updates) {
+        return await productModel.findByIdAndUpdate(id, updates, { new: true })
+    }
 
-    const { id: _, ...rest } = updates
-    products[index] = { ...products[index], ...rest }
-
-    await fs.writeFile(this.pathFile, JSON.stringify(products, null, 2))
-    return products[index]
-  }
-
-  async deleteProduct(id) {
-    const products = await this.getProducts()
-    const newProducts = products.filter(p => p.id !== id)
-
-    if (products.length === newProducts.length) throw new Error("Producto no encontrado")
-
-    await fs.writeFile(this.pathFile, JSON.stringify(newProducts, null, 2))
-  }
+    async deleteProductById(id) {
+        return await productModel.findByIdAndDelete(id)
+    }
 }
 
 export default ProductManager
